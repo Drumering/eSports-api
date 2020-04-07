@@ -2,4 +2,4 @@
 __pyca*
 
 #Database
-*.db
+application.db
