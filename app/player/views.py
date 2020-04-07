@@ -1,5 +1,5 @@
 import json
-from flask import Blueprint, abort
+from flask import Blueprint, abort, jsonify
 from flask_restful import Resource, reqparse
 from app.player.models import Player
 from app import api, db
@@ -29,8 +29,32 @@ class PlayerAPI(Resource):
     def get(self, id=None, page=1):
         if not id:
             players = Player.query.paginate(page, 10).items
+            res = []
+            for plr in players:
+                res.append({
+                    'id'         : plr.id,
+                    'playerName' : plr.playerName
+                })
+            return jsonify(res)
         else:
             players = [Player.query.get(id)]
+            res = {}
+        for plr in players:
+            res = {
+                'id'             :  plr.id,
+                'playerName'     :  plr.playerName,
+                'nickName'       :  plr.nickName,
+                'teamName'       :  plr.teamName,
+                'role'           :  plr.role,
+                'totalKills'     :  plr.totalKills,
+                'totalAssists'   :  plr.totalAssists,
+                'totalDeaths'    :  plr.totalDeaths,
+                'totalMatchs'    :  plr.totalMatchs,
+                'totalVictories' :  plr.totalVictories,
+                'kda'            :  plr.kda,
+                'winningRate'    :  plr.winningRate
+            }
+        return jsonify(res)
         if not players:
             abort(404)
 
@@ -50,7 +74,7 @@ class PlayerAPI(Resource):
                 'winningRate'    :  str(plr.winningRate)
             }
 
-        return json.dumps(res)
+        return jsonify(res)
 
     def post(self):
         args = parser.parse_args()
@@ -71,32 +95,19 @@ class PlayerAPI(Resource):
         db.session.add(plr)
         db.session.commit()
 
-        res = {}
-        res[plr.id] = {
-                'playerName'     :  plr.playerName,
-                'nickName'       :  plr.nickName,
-                'teamName'       :  plr.teamName,
-                'role'           :  plr.role,
-                'totalKills'     :  plr.totalKills,
-                'totalAssists'   :  plr.totalAssists,
-                'totalDeaths'    :  plr.totalDeaths,
-                'totalMatchs'    :  plr.totalMatchs,
-                'totalVictories' :  plr.totalVictories,
-                'kda'            :  str(plr.kda),
-                'winningRate'    :  str(plr.winningRate)
-            }
+        res = {'playerName' : plr.playerName}
 
-        return json.dumps(res)
+        return jsonify(res)
 
     def delete(self, id):
-        con = Player.query.get(id)
-        db.session.delete(con)
+        plr = Player.query.get(id)
+        db.session.delete(plr)
         db.session.commit()
         res = {'id' : id}
-        return json.dumps(res)
+        return jsonify(res)
 
     def put(self, id):
-        con = Player.query.get(id)
+        plr = Player.query.get(id)
         args = parser.parse_args()
 
         playerName     = args['playerName']
@@ -111,36 +122,23 @@ class PlayerAPI(Resource):
         kda            = (totaKills + totalAssists) if totalDeaths == 0 else (totalKills + totalAssists / totalDeaths)
         winningRate    = ((totalVictories / totalMatchs) * 100)
 
-        con.playerName     = playerName
-        con.nickName       = nickName
-        con.teamName       = teamName
-        con.role           = role
-        con.totalKills     = totalKills
-        con.totalAssists   = totalAssists
-        con.totalDeaths    = totalDeaths
-        con.totalMatchs    = totalMatchs
-        con.totalVictories = totalVictories
-        con.kda            = kda
-        con.winningRate    = winningRate
+        plr.playerName     = playerName
+        plr.nickName       = nickName
+        plr.teamName       = teamName
+        plr.role           = role
+        plr.totalKills     = totalKills
+        plr.totalAssists   = totalAssists
+        plr.totalDeaths    = totalDeaths
+        plr.totalMatchs    = totalMatchs
+        plr.totalVictories = totalVictories
+        plr.kda            = kda
+        plr.winningRate    = winningRate
 
         db.session.commit()
 
-        res = {}
-        res[con.id] = {
-                'playerName'     :  con.playerName,
-                'nickName'       :  con.nickName,
-                'teamName'       :  con.teamName,
-                'role'           :  con.role,
-                'totalKills'     :  con.totalKills,
-                'totalAssists'   :  con.totalAssists,
-                'totalDeaths'    :  con.totalDeaths,
-                'totalMatchs'    :  con.totalMatchs,
-                'totalVictories' :  con.totalVictories,
-                'kda'            :  str(con.kda),
-                'winningRate'    :  str(con.winningRate)
-            }
+        res = {'id' : plr.id}
 
-        return json.dumps(res)
+        return jsonify(res)
 
 api.add_resource(
     PlayerAPI,
